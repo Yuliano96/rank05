@@ -1,53 +1,87 @@
 #include "util.h"
 
-
-int main()
+int	main(int argc, char **argv)
 {
-	int **m;
-	int rows, columns;
-	char empty, obstacle, full;
-	t_matriz *matriz;
+	FILE		*fp;
+	t_matriz	*matrix;
+	t_square	square;
+	int			**dp;
+	char		empty;
+	char		obstacle;
+	char		full;
+	int			i;
 
-	if (is_valid_map(&rows, &columns, &empty, &obstacle, &full, "map.txt") == -1)
+	if (argc == 1)
 	{
-		fprintf(stderr, "map error\n");
-		return (1);
+		/*
+		** Sin argumentos: leemos directamente desde stdin.
+		*/
+		matrix = NULL;
+		dp = NULL;
+		if (read_stream(stdin, &matrix,
+				&empty, &obstacle, &full) == -1)
+		{
+			fprintf(stderr, "map error\n");
+			return (1);
+		}
+		if (init_square(matrix, empty, &dp) == -1)
+		{
+			free_matrizChar(&matrix->matriz, matrix->rows);
+			free_t_matriz(&matrix);
+			fprintf(stderr, "map error\n");
+			return (1);
+		}
+		large_square(dp, matrix->rows, matrix->columns);
+		win_square(dp, matrix->rows, matrix->columns, &square);
+		draw_square(matrix, &square, full);
+		free_matrizInt(&dp, matrix->rows);
+		free_matrizChar(&matrix->matriz, matrix->rows);
+		free_t_matriz(&matrix);
+		return (0);
 	}
 
-	matriz = init_matriz(rows, columns);
-	if (!matriz)
+	i = 1;
+	while (i < argc)
 	{
-		fprintf(stderr, "map error\n");
-		return (1);
+		matrix = NULL;
+		dp = NULL;
+		fp = fopen(argv[i], "r");
+		if (fp == NULL
+			|| read_stream(fp, &matrix,
+				&empty, &obstacle, &full) == -1)
+		{
+			fprintf(stderr, "map error\n");
+			if (fp != NULL)
+				fclose(fp);
+			i++;
+			if (i < argc)
+				fprintf(stdout, "\n");
+			continue ;
+		}
+		fclose(fp);
+
+		if (init_square(matrix, empty, &dp) == -1)
+		{
+			free_matrizChar(&matrix->matriz, matrix->rows);
+			free_t_matriz(&matrix);
+			fprintf(stderr, "map error\n");
+			i++;
+			if (i < argc)
+				fprintf(stdout, "\n");
+			continue ;
+		}
+
+		large_square(dp, matrix->rows, matrix->columns);
+		win_square(dp, matrix->rows, matrix->columns, &square);
+		draw_square(matrix, &square, full);
+
+		free_matrizInt(&dp, matrix->rows);
+		free_matrizChar(&matrix->matriz, matrix->rows);
+		free_t_matriz(&matrix);
+
+		i++;
+		if (i < argc)
+			fprintf(stdout, "\n");
 	}
-
-	if (read_file("map.txt", matriz) == -1)
-	{
-		free_t_matriz(&matriz);
-		fprintf(stderr, "map error\n");
-		return (1);
-	}
-
-	print(matriz);
-	fprintf(stdout, "\n");
-
-	init_square(matriz, empty, &m);
-
-	print_int(m, rows, columns);
-	fprintf(stdout, "\n");
-
-	large_square(m, matriz->rows, matriz->columns);
-
-	print_int(m, rows, columns);
-
-	t_square *c = init_squar();
-
-	win_square(m, matriz->rows, matriz->columns, c);
-
-	// free_matrizChar(&matriz->matriz, matriz->rows);
-	// free_matrizInt(&m, matriz->rows);
-	// free_t_matriz(&matriz);
-	
-	draw_square(matriz, c, full);
 	return (0);
 }
